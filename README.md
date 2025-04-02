@@ -16,6 +16,10 @@ Projeto desenvolvido para **praticar habilidades de manipulação de dados e arq
 ## Fonte dos Dados
 Portal Brasileiro de Dados Abertos e Catálogo Nacional de Dados
 
+## Breve Análise Exploratória dos Dados 
+**Screenshot do Dashboard feito no Power BI (arquivo .pbix disponível no repositório)**
+![Dashboard de Leitos Hospitalares](Dashboard_Leitos.png)
+
 [Dados Usados Aqui](https://dados.gov.br/dados/conjuntos-dados/hospitais-e-leitos)
 
 ## Pré-requisitos
