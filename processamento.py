@@ -41,21 +41,19 @@ MAPEAMENTOS = {
     }
 }
 
-def remover_colunas(df):
-    """Remove colunas desnecessárias mantendo apenas as relevantes"""
+def remover_colunas(df): # mantendo apenas as "relevantes"
     return df[[col for col in COLUNAS_RELEVANTES if col in df.columns and col != 'ANO']]
 
 from unidecode import unidecode
 import re
 
 def normalizar_dados(df, ano_arquivo):
-    """Aplica normalizações e transformações nos dados de forma otimizada"""
     # Converter colunas numéricas
     colunas_numericas = [col for col in df.columns if any(keyword in col for keyword in ['LEITOS', 'UTI'])]
     for col in colunas_numericas:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
     
-    # Processar a coluna COMP para extrair ano e mês
+    # Processa a coluna COMP para extrair ano e mês
     if 'COMP' in df.columns:
         df['COMP'] = df['COMP'].astype(str).str.zfill(6)  # Garante 6 dígitos
         df['ANO'] = df['COMP'].str[:4].astype(int)
@@ -67,11 +65,11 @@ def normalizar_dados(df, ano_arquivo):
             print(f"  Aviso: {mask.sum()} registros com mês inválido. Corrigindo para 1...")
             df.loc[mask, 'MES'] = 1
     else:
-        # Se não tiver COMP, usamos o ano do arquivo e mês 1
+        # Se não tiver COMP, usa-se o ano do arquivo e mês 1
         df['ANO'] = ano_arquivo
         df['MES'] = 1
     
-    # Aplicar mapeamentos de categorias
+    # Aplica mapeamentos de categorias
     for col, mapeamento in MAPEAMENTOS.items():
         if col in df.columns and col != 'DESC_NATUREZA_JURIDICA':  # Tratamos essa separadamente
             df[col] = df[col].replace(mapeamento)
@@ -143,13 +141,9 @@ def normalizar_dados(df, ano_arquivo):
     return df
 
 def verificar_consistencia_colunas():
-    """
-    Verifica a consistência das colunas entre todos os arquivos CSV.
-    Mostra quais colunas diferem em cada arquivo que não segue o padrão.
-    """
     import glob
     
-    # 1. Definir o padrão de colunas esperado (baseado no arquivo de 2018)
+    # 1. Define o padrão de colunas esperado (baseado no arquivo de 2018)
     COLUNAS_ESPERADAS = [
         "COMP", "REGIAO", "UF", "MUNICIPIO", "MOTIVO DESABILITACAO", "CNES",
         "NOME ESTABELECIMENTO", "RAZAO SOCIAL", "TP_GESTAO", "CO_TIPO_UNIDADE",
@@ -162,43 +156,43 @@ def verificar_consistencia_colunas():
         "UTI QUEIMADO - SUS", "UTI CORONARIANA - EXIST", "UTI CORONARIANA - SUS"
     ]
     
-    # 2. Encontrar todos os arquivos CSV
+    # 2. Encontra todos os arquivos CSV
     arquivos = glob.glob(os.path.join(DADOS_ORIGINAIS, 'Leitos_*.csv'))
     
     if not arquivos:
         print("Nenhum arquivo CSV encontrado para verificação")
         return False
     
-    # 3. Verificar cada arquivo
+    # 3. Verifica cada arquivo
     problemas_encontrados = False
     
     for arquivo in arquivos:
         ano = os.path.basename(arquivo).split('_')[1].split('.')[0]
         try:
-            # Ler apenas o cabeçalho
+            # Lê apenas o cabeçalho
             df = pd.read_csv(arquivo, nrows=0)
             colunas_arquivo = list(df.columns)
             
-            # Verificar se as colunas são idênticas às esperadas
+            # Verifica se as colunas são idênticas às esperadas
             if colunas_arquivo != COLUNAS_ESPERADAS:
                 problemas_encontrados = True
                 print(f"\n=== Problemas encontrados no arquivo {ano} ===")
                 
-                # Verificar colunas faltantes
+                # Verifica colunas faltantes
                 faltantes = set(COLUNAS_ESPERADAS) - set(colunas_arquivo)
                 if faltantes:
                     print("\nColunas ESPERADAS que estão FALTANDO:")
                     for col in sorted(faltantes):
                         print(f"- {col}")
                 
-                # Verificar colunas extras
+                # Verifica colunas extras
                 extras = set(colunas_arquivo) - set(COLUNAS_ESPERADAS)
                 if extras:
                     print("\nColunas PRESENTES que NÃO ERAM ESPERADAS:")
                     for col in sorted(extras):
                         print(f"- {col}")
                 
-                # Verificar diferenças de nomenclatura
+                # Verifica diferenças de nomenclatura
                 print("\nDiferenças de nomenclatura (esperado -> encontrado):")
                 for esperado, encontrado in zip(COLUNAS_ESPERADAS, colunas_arquivo):
                     if esperado != encontrado:
@@ -236,14 +230,13 @@ def processar_arquivo(arquivo_path, ano):
     df = remover_colunas(df)
     return normalizar_dados(df, ano)
 
-def processar_todos_arquivos():
-    """Processa todos os arquivos na pasta originais"""
+def processar_todos_arquivos(): # na pasta "dados/originais"
     # Verificar se a pasta existe
     if not os.path.exists(DADOS_ORIGINAIS):
         print(f"Erro: Pasta não encontrada - {DADOS_ORIGINAIS}")
         return None
     
-    # Criar pasta de saída se não existir
+    # Cria pasta de saída se não existir
     os.makedirs(DADOS_LIMPOS, exist_ok=True)
     
     dados_consolidados = []
@@ -266,11 +259,11 @@ def processar_todos_arquivos():
         print("Nenhum arquivo foi processado com sucesso.")
         return None
     
-    # Consolidar dados
+    # Consolida dados
     df_final = pd.concat(dados_consolidados, ignore_index=True)
     df_final.sort_values(['ANO', 'MES', 'UF'], inplace=True)
     
-    # Salvar arquivo consolidado
+    # Salva arquivo consolidado
     data_atual = datetime.now().strftime('%Y%m%d_%H%M%S')
     caminho_saida = os.path.join(DADOS_LIMPOS, f'leitos_consolidados_{data_atual}.csv')
     df_final.to_csv(caminho_saida, index=False, encoding='utf-8', sep=',')
